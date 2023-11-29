@@ -1,3 +1,16 @@
+
+
+
+
+
+
+
+
+
+
+
+
+
 # Default values for hedera-the-graph-node.
 # This is a YAML-formatted file.
 
@@ -66,27 +79,25 @@ podAnnotations: {}
 podSecurityContext: {}
 
 postgres:
+  # fromSecret:
+    # db:
+    #   value: 
+    # host:
+    #   value:
+    # password:
+    #   value:
+    # replicaHost:
+    # user:
+    #   value:
   db:
     value: ''
-    # fromConfigMap:
-    #   name:
-    #   key:
   host:
     value: ''
-    # fromConfigMap:
-    #   name:
-    #   key:
   password:
     value: ''
-    # fromSecret:
-    #   name:
-    #   key:
   replicaHost: ''
   user:
     value: ''
-    # fromSecret:
-    #   name:
-    #   key:
 
 # Overriding this value will only affect nodes with the role of query-node, as index-node is always a single replica
 replicaCount: 1
@@ -117,3 +128,21 @@ service:
   type: ClusterIP
 
 tolerations: []
+
+
+index:
+  port:
+    metrics: 8040
+    json_rpc: 8020
+    graphql: 8000
+    graphql_ws: 8001
+    index: 8030
+  config:
+    BLOCK_INGESTOR:
+    node_id:
+    node_role:
+    GRAPH_ALLOW_NON_DETERMINISTIC_FULLTEXT_SEARCH:
+    GRAPH_NODE_CONFIG: 
+  serviceaccount:
+    create: true
+        
