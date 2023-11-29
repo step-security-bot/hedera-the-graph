@@ -1,0 +1,17 @@
+{{- if .Values.index.enabled }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ printf "%s-%s" .Chart.Name "index" }}
+  labels:
+    {{- include "hedera-the-graph-node.labels" . | nindent 4 }}
+  {{- if .Values.index.annotations }}
+  annotations:
+  {{ toYaml .Values.index.annotations | indent 4 }}
+  {{- end }}
+data:
+  BLOCK_INGESTOR: {{ .Values.index.config.node_id }} # Why two instances of the same value with different keys?
+  node_id: {{ .Values.index.config.node_id }} # Why two instances of the same value with different keys?
+  node_role: {{ .Values.index.config.node_role }} # 
+  GRAPH_ALLOW_NON_DETERMINISTIC_FULLTEXT_SEARCH: {{ .Values.index.config.GRAPH_ALLOW_NON_DETERMINISTIC_FULLTEXT_SEARCH }}
+  GRAPH_NODE_CONFIG: {{ .Values.index.config.GRAPH_NODE_CONFIG }}

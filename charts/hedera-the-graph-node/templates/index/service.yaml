@@ -1,0 +1,37 @@
+{{- if .Values.index.enabled }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ printf "%s-%s" .Chart.Name "index" }}
+  lables:
+    {{- include "hedera-the-graph-node.labels" . | nindent 4 }}
+  {{- if .Values.index.annotations }}
+  annotations:
+  {{ toYaml .Values.index.annotations | indent 4 }}
+  {{- end }} 
+spec:
+  type: {{ .Values.index.service.type }}
+  ports:
+    - port: {{ .Values.index.ports.metrics }}
+      targetPort: metrics
+      protocol: TCP
+      name: metrics
+    - port: {{ .Values.index.ports.json_rpc}}
+      targetPort: json-rpc
+      protocol: TCP
+      name: json-rpc
+    - port: {{ .Values.index.ports.graphql }}
+      targetPort: graphql
+      protocol: TCP
+      name: graphql
+    - port: {{ .Values.index.ports.graphql_ws }}
+      targetPort: graphql-ws
+      protocol: TCP
+      name: graphql-ws
+    - port: {{ .Values.index.ports.index }}
+      targetPort: index
+      protocol: TCP
+      name: index    
+  selector:
+    {{- include "hedera-the-graph-node.index.selectorLabels" . | nindent 4 }}
+{{- end }}

@@ -1,0 +1,115 @@
+{{- if .Values.index.enabled }}
+apiVersion: apps/v1
+kind: deployment
+metadata:
+  name: {{ printf "%s-%s" .Chart.Name "index" }}
+  labels:
+    {{- include "hedera-the-graph-node.labels" . | nindent 4 }}
+  {{- if .Values.index.annotations }}
+  annotations:
+  {{ toYaml .Values.index.annotations | indent 4 }}
+  {{- end }} 
+spec:
+ {{ /* There should only ever be 1 indexer running */}}
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      {{- include "hedera-the-graph-node.index.selectorLabels" . | nindent 6 }}  
+  template:
+    metadata:
+      {{- if .Values.index.podAnnotations }}
+      annotations:
+        {{- toYaml .Values.index.podAnnotations | nindent 8 }}
+      {{- end }}
+      labels:
+        {{- include "hedera-the-graph-node.index.selectorLabels" . | nindent 8 }}
+    spec:
+       {{- with .Values.index.image.pullSecret }}
+        imagePullSecrets:
+          {{- toYaml . | nindent 8 }}
+        {{- end }}
+        {{- if .Values.index.podSecurityContext }}
+        securityContext:
+          {{- toYaml .Values.index.securityContext | nindent 8 }}
+        {{- end }}
+        serviceAccountName: {{ template "hedera-the-graph-node.index.serviceAccountName" . }}
+        initContainers:
+        - name: wait-for-rta
+          image: "adocker.io/library/alpine:3.18.4"
+          command:
+            - "/bin/sh"
+            - "-c"
+          args:
+            - "until nc -z -w2 $PG_HOST 5432; do echo 'waiting for postgres'; sleep 2; done;"
+          env:
+            - name: "PG_HOST"
+              valueFrom:
+                secretRef:
+                  {{- if hasKey .Values.postgres. "fromSecret" }}
+                    name: {{ .Values.postgres.fromSecret }}
+                    key: {{ .Values.postgres.host.fromSecret.value }}
+                  {{- else }}
+                    name: {{ include "hedera-the-graph-node.fullname" . }}-config
+                    key: PG_HOST
+                  {{- end }}
+        containers:
+        - name: {{ printf "%s-%s" .Chart.Name "index" }}
+          securityContext: 
+            {{- toYaml .Values.serverRepository.securityContext | nindent 12 }}
+          image: "{{ .Values.index.image.repository }}:{{ .Values.index.image.tag }}"
+          imagePullPolicy: {{ .Values.index.image.pullPolicy }}
+          envFrom:
+            - configMapRef:
+                name: {{ printf "%s-%s-%s" .Chart.Name "index" "conf" }}
+            - secretRef:
+                name: {{ printf "%s-%s-%s" .Chart.Name "index" "conf" }}
+          ports:
+            - name: metrics
+              containerPort: {{ .Values.index.ports.metrics }}
+              protocol: TCP
+            - name: json_rpc
+              containerPort: {{ .Values.index.ports.json_rpc }}
+              protocol: TCP
+            - name: graphql
+              containerPort: {{ .Values.index.ports.graphql }}
+              protocol: TCP
+            - name: graphql_ws
+              containerPort: {{ .Values.index.ports.graphql_ws }}
+              protocol: TCP
+            - name: index
+              containerPort: {{ .Values.index.ports.index }}
+              protocol: TCP
+         {{ /* Is there a health check or set of checks that can used here? */ }}   
+          livenessProbe:
+            httpGet:
+              path: /
+              port: metrics
+          readinessProbe:
+            httpGet:
+              path: /
+              port: metrics
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+          volumeMounts:
+          - name: config
+            mountPath: "/etc/graph-node"
+            readOnly: true
+      volumes:
+      - name: config
+        secret:
+          secretName: {{ include "hedera-the-graph-node.fullname" . }}
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+{{- end }}                                      
