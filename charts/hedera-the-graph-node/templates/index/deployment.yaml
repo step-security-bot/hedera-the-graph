@@ -1,6 +1,6 @@
 {{- if .Values.index.enabled }}
 apiVersion: apps/v1
-kind: deployment
+kind: Deployment
 metadata:
   name: {{ printf "%s-%s" .Chart.Name "index" }}
   labels:
@@ -26,75 +26,83 @@ spec:
       labels:
         {{- include "hedera-the-graph-node.index.selectorLabels" . | nindent 8 }}
     spec:
-    {{- with .Values.index.image.pullSecret }}
-    imagePullSecrets:
-      {{- toYaml . | nindent 8 }}
-    {{- end }}
-    {{- if .Values.index.podSecurityContext }}
-    securityContext:
-      {{- toYaml .Values.index.securityContext | nindent 8 }}
-    {{- end }}
-    serviceAccountName: {{ template "hedera-the-graph-node.index.serviceAccountName" . }}
-    initContainers:
-    - name: wait-for-rta
-      image: "docker.io/library/alpine:3.18.4"
-      command:
-        - "/bin/sh"
-        - "-c"
-      args:
-        - "until nc -z -w2 $PG_HOST $PG_PORT; do echo 'waiting for postgres'; sleep 2; done;"
-      envFrom:
-        secretRef:
-          name: {{ printf "%s-%s" .Chart.Name "shared" }}          
-    containers:
-    - name: {{ printf "%s-%s" .Chart.Name "index" }}
-      securityContext: 
-        {{- toYaml .Values.index.securityContext | nindent 12 }}
-      image: "{{ .Values.index.image.repository }}:{{ .Values.index.image.tag }}"
-      imagePullPolicy: {{ .Values.index.image.pullPolicy }}
-      envFrom:
-        - configMapRef:
-            name: {{ printf "%s-%s" .Chart.Name "index" }}
-        - configMapRef:
-            name: {{ printf "%s-%s" .Chart.Name "shared" }}    
-        - secretRef:
-            name: {{ printf "%s-%s" .Chart.Name "index" }}
-        - secretRef:
-            name: {{ printf "%s-%s" .Chart.Name "shared" }}    
-      ports:
-        - name: metrics
-          containerPort: {{ .Values.index.service.port.metrics }}
-          protocol: TCP
-        - name: json_rpc
-          containerPort: {{ .Values.index.service.port.json_rpc }}
-          protocol: TCP
-        - name: graphql
-          containerPort: {{ .Values.index.service.port.graphql }}
-          protocol: TCP
-        - name: graphql_ws
-          containerPort: {{ .Values.index.service.port.graphql_ws }}
-          protocol: TCP
-        - name: index
-          containerPort: {{ .Values.index.service.port.index }}
-          protocol: TCP
-      livenessProbe:
-        httpGet:
-          path: /
-          port: metrics
-      readinessProbe:
-        httpGet:
-          path: /
-          port: metrics
-      resources:
-        {{- toYaml .Values.resources | nindent 12 }}
-      volumeMounts:
-      - name: config
-        mountPath: "/etc/graph-node"
-        readOnly: true
+      {{- with .Values.index.image.pullSecret }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- if .Values.index.podSecurityContext }}
+      securityContext:
+        {{- toYaml .Values.index.securityContext | nindent 8 }}
+      {{- end }}
+      serviceAccountName: {{ printf "%s-%s" .Chart.Name "index" }}
+      initContainers:
+      - name: wait-for-rta
+        image: "docker.io/library/alpine:3.18.4"
+        command:
+          - "/bin/sh"
+          - "-c"
+        args:
+          - "until nc -z -w2 $PG_HOST $PG_PORT; do echo 'waiting for postgres'; sleep 2; done;"
+        env:
+          - name: PG_HOST
+            valueFrom:
+              secretKeyRef:
+                name: {{ printf "%s-%s" .Chart.Name "shared" }}
+                key: PG_HOST
+          - name: PG_PORT
+            valueFrom:
+              secretKeyRef:
+                name: {{ printf "%s-%s" .Chart.Name "shared" }}
+                key: PG_PORT      
+      containers:
+      - name: {{ printf "%s-%s" .Chart.Name "index" }}
+        securityContext: 
+          {{- toYaml .Values.index.securityContext | nindent 12 }}
+        image: "{{ .Values.index.image.repository }}:{{ .Values.index.image.tag }}"
+        imagePullPolicy: {{ .Values.index.image.pullPolicy }}
+        envFrom:
+          - configMapRef:
+              name: {{ printf "%s-%s" .Chart.Name "index" }}
+          - configMapRef:
+              name: {{ printf "%s-%s" .Chart.Name "shared" }}    
+          - secretRef:
+              name: {{ printf "%s-%s" .Chart.Name "index" }}
+          - secretRef:
+              name: {{ printf "%s-%s" .Chart.Name "shared" }}    
+        ports:
+          - name: metrics
+            containerPort: {{ .Values.index.service.port.metrics }}
+            protocol: TCP
+          - name: json-rpc
+            containerPort: {{ .Values.index.service.port.json_rpc }}
+            protocol: TCP
+          - name: graphql
+            containerPort: {{ .Values.index.service.port.graphql }}
+            protocol: TCP
+          - name: graphql-ws
+            containerPort: {{ .Values.index.service.port.graphql_ws }}
+            protocol: TCP
+          - name: index
+            containerPort: {{ .Values.index.service.port.index }}
+            protocol: TCP
+        livenessProbe:
+          httpGet:
+            path: /
+            port: metrics
+        readinessProbe:
+          httpGet:
+            path: /
+            port: metrics
+        resources:
+          {{- toYaml .Values.resources | nindent 12 }}
+        volumeMounts:
+        - name: config
+          mountPath: "/etc/graph-node"
+          readOnly: true
       volumes:
       - name: config
-        configMap:
-          name: {{ printf "%s-%s" .Chart.Name "tomlconfig" }}
+        secret:
+          secretName: {{ printf "%s-%s" .Chart.Name "tomlconfig" }}
       {{- with .Values.nodeSelector }}
       nodeSelector:
         {{- toYaml . | nindent 8 }}

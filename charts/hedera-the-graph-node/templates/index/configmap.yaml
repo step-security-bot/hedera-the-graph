@@ -11,7 +11,7 @@ metadata:
   {{- end }}
 data:
 {{- range $key, $value := .Values.config.hedera }}
-  $key: $value
+  {{ $key }}: {{ $value | quote}}
 {{- end }}
 {{- end }}
 
@@ -28,8 +28,8 @@ metadata:
   {{ toYaml .Values.index.annotations | indent 4 }}
   {{- end }}
 data:
-  GRAPH_ALLOW_NON_DETERMINISTIC_FULLTEXT_SEARCH: {{ .Values.index.config.GRAPH_ALLOW_NON_DETERMINISTIC_FULLTEXT_SEARCH }}
-  GRAPH_NODE_CONFIG: {{ .Values.index.config.GRAPH_NODE_CONFIG }}
+  GRAPH_ALLOW_NON_DETERMINISTIC_FULLTEXT_SEARCH: {{ .Values.index.config.GRAPH_ALLOW_NON_DETERMINISTIC_FULLTEXT_SEARCH | quote}}
+  GRAPH_NODE_CONFIG: {{ .Values.index.config.GRAPH_NODE_CONFIG | quote }}
   ipfs: {{ .Values.index.config.ipfs }}
 {{- end }}
 
@@ -50,53 +50,4 @@ data:
   BLOCK_INGESTOR: {{ .Values.index.config.node_id }} # This ENV and node_id are the same
   node_id: {{ .Values.index.config.node_id }} # This ENV and BLOCK_INGESTOR are the same
   node_role: {{ .Values.index.config.node_role }}
-{{- end }}
-
----
-{{- if .Values.index.enabled }}
-apiVersion: v1
-kind: ConfigMap
-metadata:
-  name: {{ printf "%s-%s" .Chart.Name "tomlconfig" }}
-  labels:
-    {{- include "hedera-the-graph-node.labels" . | nindent 4 }}
-    {{- include "hedera-the-graph-node.index.selectorLabels" . | nindent 4 }}
-  {{- if .Values.index.annotations }}
-  annotations:
-  {{ toYaml .Values.index.annotations | indent 4 }}
-  {{- end }}
-data:
-  # config.toml: {{ include "hedera-the-graph-node.config" . }}
-  config.toml:
-[store]
-[store.primary]
-  connection = "postgresql://$PG_USERNAME:$PG_PASS@$PG_HOST/$PG_DB"
-  weight = 1
-  pool_size = 10
-
-[chains]
-  ingestor = "{{ .Values.blockIngestorNodeId }}"
-  {{- range $name, $conf := .Values.config.chains }}
-  [chains.{{ $name }}]
-    shard = "primary"
-    {{- range $conf.providers }}
-    [[chains.{{ $name }}.provider]]
-      label = {{ .label | quote }}
-      url = {{ .url | quote }}
-      features = {{ toJson .features }}
-      transport = {{ default "rpc" .transport | quote }}
-      {{- with .headers }}
-      [headers]
-        {{- range $k, $v := . }}
-        {{ $k }} = {{ $v | quote }}
-        {{- end }}
-      {{- end}}
-    {{- end }}
-  {{- end }}
-
-[deployment]
-[[deployment.rule]]
-  shard = "primary"
-  indexers = [ "{{ .Values.blockIngestorNodeId }}" ]  
-  
 {{- end }}

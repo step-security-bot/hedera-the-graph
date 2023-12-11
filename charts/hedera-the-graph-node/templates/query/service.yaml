@@ -28,11 +28,7 @@ spec:
     - port: {{ .Values.query.service.port.graphql_ws }}
       targetPort: graphql-ws
       protocol: TCP
-      name: graphql-ws
-    - port: {{ .Values.query.service.port.query }}
-      targetPort: query
-      protocol: TCP
-      name: query    
+      name: graphql-ws 
   selector:
     {{- include "hedera-the-graph-node.query.selectorLabels" . | nindent 4 }}
 {{- end }}

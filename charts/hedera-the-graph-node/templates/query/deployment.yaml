@@ -28,7 +28,7 @@ spec:
       imagePullSecrets:
         {{- toYaml . | nindent 8 }}
     {{- end }}
-      serviceAccountName: {{ template "hedera-the-graph-node.query.serviceAccountName" . }}
+      serviceAccountName: {{ printf "%s-%s" .Chart.Name "query" }}
       {{- if .Values.query.podSecurityContext }}
       securityContext:
         {{- toYaml .Values.query.podSecurityContext | nindent 8 }}
@@ -59,13 +59,13 @@ spec:
             - name: metrics
               containerPort: {{ .Values.query.service.port.metrics }}
               protocol: TCP
-            - name: json_rpc
+            - name: json-rpc
               containerPort: {{ .Values.query.service.port.json_rpc }}
               protocol: TCP
             - name: graphql
               containerPort: {{ .Values.query.service.port.graphql }}
               protocol: TCP
-            - name: graphql_ws
+            - name: graphql-ws
               containerPort: {{ .Values.query.service.port.graphql_ws }}
               protocol: TCP
           livenessProbe:
@@ -84,8 +84,8 @@ spec:
             readOnly: true
       volumes:
       - name: config
-        configMap:
-          name: {{ printf "%s-%s" .Chart.Name "tomlconfig" }}
+        secret:
+          secretName: {{ printf "%s-%s" .Chart.Name "tomlconfig" }}
       {{- with .Values.nodeSelector }}
       nodeSelector:
         {{- toYaml . | nindent 8 }}
