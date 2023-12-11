@@ -1,0 +1,38 @@
+{{- if .Values.query.enabled }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ printf "%s-%s" .Chart.Name "query" }}
+  lables:
+    {{- include "hedera-the-graph-node.labels" . | nindent 4 }}
+    app: {{ printf "%s-%s" .Chart.Name "query" }}
+  {{- if .Values.query.annotations }}
+  annotations:
+  {{ toYaml .Values.query.annotations | indent 4 }}
+  {{- end }} 
+spec:
+  type: {{ .Values.query.service.type }}
+  ports:
+    - port: {{ .Values.query.service.port.metrics }}
+      targetPort: metrics
+      protocol: TCP
+      name: metrics
+    - port: {{ .Values.query.service.port.json_rpc}}
+      targetPort: json-rpc
+      protocol: TCP
+      name: json-rpc
+    - port: {{ .Values.query.service.port.graphql }}
+      targetPort: graphql
+      protocol: TCP
+      name: graphql
+    - port: {{ .Values.query.service.port.graphql_ws }}
+      targetPort: graphql-ws
+      protocol: TCP
+      name: graphql-ws
+    - port: {{ .Values.query.service.port.query }}
+      targetPort: query
+      protocol: TCP
+      name: query    
+  selector:
+    {{- include "hedera-the-graph-node.query.selectorLabels" . | nindent 4 }}
+{{- end }}

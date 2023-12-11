@@ -1,0 +1,16 @@
+{{- if and (eq .Values.query.enabled true ) ( ne .Values.index.enabled true ) }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ printf "%s-%s" .Chart.Name "shared" }}
+  labels:
+    {{- include "hedera-the-graph-node.labels" . | nindent 4 }}
+  {{- if .Values.query.annotations }}
+  annotations:
+  {{ toYaml .Values.query.annotations | indent 4 }}
+  {{- end }}
+data:
+  GRAPH_ALLOW_NON_DETERMINISTIC_FULLTEXT_SEARCH: {{ .Values.query.config.GRAPH_ALLOW_NON_DETERMINISTIC_FULLTEXT_SEARCH }}
+  GRAPH_NODE_CONFIG: {{ .Values.query.config.GRAPH_NODE_CONFIG }}
+  ipfs: {{ .Values.query.config.ipfs }}
+{{- end }}

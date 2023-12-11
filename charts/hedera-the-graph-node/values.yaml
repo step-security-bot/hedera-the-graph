@@ -1,38 +1,9 @@
-
-
-
-
-
-
-
-
-
-
-
-
-
-# Default values for hedera-the-graph-node.
-# This is a YAML-formatted file.
-
-affinity: {}
-# Shouldn't have - sign, cause it would be replaced with _
-blockIngestorNodeId: index_node
+nameoOverride: ""
+fullnameOverride: ""
+imagePullSecrets: []
 
 config:
-  chains: {}
-    # mainnet:
-    #   providers:
-    #   - label: name
-    #     transport: rpc
-    #     url: url
-    #     features: [ archive ]
-    #     headers: {"Authorization": "Bearer foo"}
-  ipfs:
-    value: ''
-    # fromConfigMap:
-    #   name:
-    #   key:
-  hederaEnvVars:
+  hedera:
     ETHEREUM_BLOCK_BATCH_SIZE: "1"
     ETHEREUM_POLLING_INTERVAL: "1000"
     ETHEREUM_REORG_THRESHOLD: "0"
@@ -43,106 +14,98 @@ config:
     GRAPH_ETHEREUM_MAX_EVENT_ONLY_RANGE: "50"
     GRAPH_KILL_IF_UNRESPONSIVE: "false"
     GRAPH_LOG: "debug"
-  extraEnvVars: {}
-
-fullnameOverride: ''
+  shared:
+    PG_USERNAME: ''
+    PG_PASS: ''
+    PG_HOST: '127.0.0.1'
+    PG_PORT: 5432
+    PG_DB: '' 
 
 image:
   pullPolicy: IfNotPresent
   repository: graphprotocol/graph-node
-  # Overrides the image tag whose default is the chart appVersion.
   tag: v0.29.0
 
-imagePullSecrets: []
-
-ingress:
-  annotations: {}
-  enabled: false
-  hosts: null
-  tls: []
-
-ingressWebsocket:
-  annotations: {}
-  enabled: false
-  hosts: null
-  tls: []
-
-monitoring:
-  enabled: false
-
-nameOverride: ''
-
-nodeSelector: {}
-
-podAnnotations: {}
-
-podSecurityContext: {}
-
-postgres:
-  # fromSecret:
-    # db:
-    #   value: 
-    # host:
-    #   value:
-    # password:
-    #   value:
-    # replicaHost:
-    # user:
-    #   value:
-  db:
-    value: ''
-  host:
-    value: ''
-  password:
-    value: ''
-  replicaHost: ''
-  user:
-    value: ''
-
-# Overriding this value will only affect nodes with the role of query-node, as index-node is always a single replica
-replicaCount: 1
-
-resources: {}
-  # We usually recommend not to specify default resources and to leave this as a conscious choice for the user.
-  # This also increases chances charts run on environments with little resources, such as Minikube.
-  # If you do want to specify resources, uncomment the following lines, adjust them as necessary, and remove the curly braces after 'resources:'.
-  # limits:
-  #   cpu: 100m
-  #   memory: 128Mi
-  # requests:
-  #   cpu: 100m
-  #   memory: 128Mi
-
-# Possible values: query-node, index-node
-role: query-node
-
-securityContext: {}
-
-service:
-  annotations: {}
-  graphqlPort: 8000
-  graphqlWsPort: 8001
-  indexPort: 8030
-  jsonRpcPort: 8020
-  metricsPort: 8040
-  type: ClusterIP
-
-tolerations: []
-
-
 index:
-  port:
-    metrics: 8040
-    json_rpc: 8020
-    graphql: 8000
-    graphql_ws: 8001
-    index: 8030
-  config:
-    BLOCK_INGESTOR:
-    node_id:
-    node_role:
-    GRAPH_ALLOW_NON_DETERMINISTIC_FULLTEXT_SEARCH:
-    GRAPH_NODE_CONFIG: 
-  serviceaccount:
+  # Deploy hedera-the-graph index node
+  enabled: true
+
+  image:
+    imagePullSecrets: []
+
+  # Indexer specific annotations and deployment configurations
+  annotations: {}
+  resources: {}
+  nodeSelector: {}
+  affinity: {}
+  tolerations: []
+
+  ## Annotations and securityContext for index pods
+  podAnnotations: {}
+  podSecurityContext: {}
+
+# By default monitoring endpoint is disabled
+  monitoring:
+    enabled: false
+
+  ## Index service configurations
+  service:
+    type: ClusterIP
+    port:
+      metrics: 8040
+      json_rpc: 8020
+      graphql: 8000
+      graphql_ws: 8001
+      index: 8030
+
+  serviceAccount:
     create: true
+    annotations: {}
+    name: "index"
+
+  config:
+    BLOCK_INGESTOR: index_node
+    node_id: index_node
+    node_role: "index"
+    GRAPH_NODE_CONFIG: "/etc/graph-node/config.toml"
+    GRAPH_ALLOW_NON_DETERMINISTIC_FULLTEXT_SEARCH: "true"
+
+
+query:
+  enabled: true
+
+  image:  
+    imagePullSecrets: []
+
+  # Querier specific annotations and deployment configurations
+  annotations: {}
+  resources: {}
+  nodeSelector: {}
+  affinity: {}
+  tolerations: []
+
+  ## Annotations and securityContext for query pods
+  podAnnotations: {}
+  podSecurityContext: {}
+
+# By default monitoring endpoint is disabled
+  monitoring:
+    enabled: false
+
+  service:
+    port:
+      metrics: 8040
+      json_rpc: 8020
+      graphql: 8000
+      graphql_ws: 8001
+  config:
+    GRAPH_NODE_CONFIG: "/etc/graph-node/config.toml"
+    GRAPH_ALLOW_NON_DETERMINISTIC_FULLTEXT_SEARCH: "true"
+    node_role: "query"
+
+  serviceAccount:
+    create: true
+    annotations: {}
+    name: "query"    
+    
         

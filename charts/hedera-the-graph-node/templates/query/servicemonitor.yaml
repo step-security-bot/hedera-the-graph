@@ -1,0 +1,23 @@
+{{ if .Values.query.monitoring.enabled }}
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: {{ printf "%s-%s" .Chart.Name "query" }}
+  labels:
+    {{- include "hedera-the-graph-node.labels" . | nindent 4 }}
+    {{- include "hedera-the-graph-node.query.selectorLabels" . | nindent 4 }}
+  {{- if .Values.query.annotations }}
+  annotations:
+  {{ toYaml .Values.query.annotations | indent 4 }}
+  {{- end }} 
+spec:
+  namespaceSelector:
+    matchNames:
+    - {{- .Release.Namespace }}
+  selector:
+    matchLabels:
+    {{- include "hedera-the-graph-node.query.selectorLabels" . | nindent 6 }}
+  endpoints:
+  - port: metrics
+    interval: 30s
+{{- end }}    

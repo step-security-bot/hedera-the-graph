@@ -25,28 +25,54 @@ If release name contains chart name it will be used as a full name.
 {{- end }}
 
 {{/*
-Create chart name and version as used by the chart label.
-*/}}
-{{- define "hedera-the-graph-node.chart" -}}
-{{- printf "%s-%s" .Chart.Name .Chart.Version | replace "+" "_" | trunc 63 | trimSuffix "-" }}
-{{- end }}
-
-{{/*
 Common labels
 */}}
 {{- define "hedera-the-graph-node.labels" -}}
-helm.sh/chart: {{ include "hedera-the-graph-node.chart" . }}
-{{ include "hedera-the-graph-node.selectorLabels" . }}
+helm.sh/chart: {{ .Chart.Name }}
 {{- if .Chart.AppVersion }}
 app.kubernetes.io/version: {{ .Chart.AppVersion | quote }}
+{{- else -}}
+app.kubernetes.io/version: {{ .Values.image.tag }}
 {{- end }}
 app.kubernetes.io/managed-by: {{ .Release.Service }}
 {{- end }}
 
 {{/*
-Selector labels
+Selector labels for index component
 */}}
-{{- define "hedera-the-graph-node.selectorLabels" -}}
-app.kubernetes.io/name: {{ include "hedera-the-graph-node.name" . }}
-app.kubernetes.io/instance: {{ .Release.Name }}
+{{- define "hedera-the-graph-node.index.selectorLabels" -}}
+app: {{ printf "%s-%s" .Chart.Name "index" -}}
 {{- end }}
+
+{{/*
+Selector labels for query component
+*/}}
+{{- define "hedera-the-graph-node.query.selectorLabels" -}}
+app: {{ printf "%s-%s" .Chart.Name "query" -}}
+{{- end }}
+
+
+{{/*
+Create the name of the service account to use
+*/}}
+{{- define "hedera-the-graph-node.index.serviceAccountName" -}}
+{{- if .Values.index.serviceAccount.create }}
+{{- default (include "hedera-the-graph-node.fullname" .) .Values.index.serviceAccount.name }}
+{{- else }}
+{{- default "default" .Values.index.serviceAccount.name }}
+{{- end }}
+{{- end }}
+
+
+{{/*
+Create the name of the service account to use
+*/}}
+{{- define "hedera-the-graph-node.query.serviceAccountName" -}}
+{{- if .Values.query.serviceAccount.create }}
+{{- default (include "hedera-the-graph-node.fullname" .) .Values.query.serviceAccount.name }}
+{{- else }}
+{{- default "default" .Values.query.serviceAccount.name }}
+{{- end }}
+{{- end }}
+
+

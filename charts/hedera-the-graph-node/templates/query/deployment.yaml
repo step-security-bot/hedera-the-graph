@@ -1,0 +1,103 @@
+{{- if .Values.query.enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ printf "%s-%s" .Chart.Name "query" }}
+  labels:
+    {{- include "hedera-the-graph-node.labels" . | nindent 4 }}
+    {{- include "hedera-the-graph-node.query.selectorLabels" . | nindent 4 }}
+  {{- if .Values.query.annotations }}
+  annotations:
+  {{ toYaml .Values.query.annotations | indent 4 }}
+  {{- end }} 
+spec:
+  replicas: {{ .Values.query.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "hedera-the-graph-node.query.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+    {{- if .Values.query.podAnnotations }}
+      annotations:
+        {{ toYaml .Values.query.podAnnotations | indent 8 }}
+    {{- end }}
+      labels:
+        {{- include "hedera-the-graph-node.query.selectorLabels" . | nindent 8 }}
+    spec:
+    {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+    {{- end }}
+      serviceAccountName: {{ template "hedera-the-graph-node.query.serviceAccountName" . }}
+      {{- if .Values.query.podSecurityContext }}
+      securityContext:
+        {{- toYaml .Values.query.podSecurityContext | nindent 8 }}
+      {{- end }}  
+      containers:
+        - name: {{ printf "%s-%s" .Chart.Name "query" }}
+          securityContext:
+            {{- toYaml .Values.query.securityContext | nindent 12 }}
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          ports:
+            - name: query
+              containerPort: 8000
+              protocol: TCP
+          envFrom:
+            - configMapRef:
+                name: {{ printf "%s-%s" .Chart.Name "shared" }}                
+            - secretRef:
+                name: {{ printf "%s-%s" .Chart.Name "query" }}
+          env:
+            - name: node_id
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+            - name: node_role
+              value: {{ .Values.query.config.node_role }}      
+          ports:
+            - name: metrics
+              containerPort: {{ .Values.query.service.port.metrics }}
+              protocol: TCP
+            - name: json_rpc
+              containerPort: {{ .Values.query.service.port.json_rpc }}
+              protocol: TCP
+            - name: graphql
+              containerPort: {{ .Values.query.service.port.graphql }}
+              protocol: TCP
+            - name: graphql_ws
+              containerPort: {{ .Values.query.service.port.graphql_ws }}
+              protocol: TCP
+          livenessProbe:
+            httpGet:
+              path: /
+              port: metrics
+          readinessProbe:
+            httpGet:
+              path: /
+              port: metrics
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+          volumeMounts:
+          - name: config
+            mountPath: "/etc/graph-node"
+            readOnly: true
+      volumes:
+      - name: config
+        configMap:
+          name: {{ printf "%s-%s" .Chart.Name "tomlconfig" }}
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}              
+
+
+{{- end }}

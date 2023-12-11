@@ -5,6 +5,7 @@ metadata:
   name: {{ printf "%s-%s" .Chart.Name "index" }}
   lables:
     {{- include "hedera-the-graph-node.labels" . | nindent 4 }}
+    app: {{ printf "%s-%s" .Chart.Name "index" }}
   {{- if .Values.index.annotations }}
   annotations:
   {{ toYaml .Values.index.annotations | indent 4 }}
@@ -12,23 +13,23 @@ metadata:
 spec:
   type: {{ .Values.index.service.type }}
   ports:
-    - port: {{ .Values.index.ports.metrics }}
+    - port: {{ .Values.index.service.port.metrics }}
       targetPort: metrics
       protocol: TCP
       name: metrics
-    - port: {{ .Values.index.ports.json_rpc}}
+    - port: {{ .Values.index.service.port.json_rpc}}
       targetPort: json-rpc
       protocol: TCP
       name: json-rpc
-    - port: {{ .Values.index.ports.graphql }}
+    - port: {{ .Values.index.service.port.graphql }}
       targetPort: graphql
       protocol: TCP
       name: graphql
-    - port: {{ .Values.index.ports.graphql_ws }}
+    - port: {{ .Values.index.service.port.graphql_ws }}
       targetPort: graphql-ws
       protocol: TCP
       name: graphql-ws
-    - port: {{ .Values.index.ports.index }}
+    - port: {{ .Values.index.service.port.index }}
       targetPort: index
       protocol: TCP
       name: index    
