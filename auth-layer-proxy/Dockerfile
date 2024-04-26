@@ -1,4 +1,4 @@
-FROM envoyproxy/envoy:v1.28-latest
+FROM envoyproxy/envoy:v1.28-latest@sha256:9ce1f8b5d1de73dac6ef12b829bfeea8a15dbb0aa3a594e1c81187ddb9daf8fb
 
 # Copy all necessary files
 COPY /filters/ /etc/envoy/filters/

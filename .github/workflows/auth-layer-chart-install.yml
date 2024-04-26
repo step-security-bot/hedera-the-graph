@@ -7,12 +7,20 @@ on:
     branches: [ main, release/*]
     tags: [ v* ]
 
+permissions:
+  contents: read
+
 jobs:
   install:
     runs-on: ubuntu-latest
     steps:
+      - name: Harden Runner
+        uses: step-security/harden-runner@63c24ba6bd7ba022e95695ff85de572c04a18142 # v2.7.0
+        with:
+          egress-policy: audit
+
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@f43a0e5ff2bd294095638e18286ca9a3d1956744 # v3.6.0
         with:
           fetch-depth: 0
 
@@ -24,10 +32,10 @@ jobs:
         timeout-minutes: 3
 
       - name: Set up Docker Qemu
-        uses: docker/setup-qemu-action@v2
+        uses: docker/setup-qemu-action@2b82ce82d56a2a04d2637cd93a637ae1b359c0a7 # v2.2.0
 
       - name: Install ct
-        uses: helm/chart-testing-action@v2.6.1
+        uses: helm/chart-testing-action@e6669bcd63d7cb57cb4380c33043eebe5d111992 # v2.6.1
 
       - name: Install chart
         run: ct install --helm-extra-args="--timeout 10m" --helm-extra-set-args="--set=global.auth.clientSecret=abcd1234" --charts charts/hedera-the-graph-auth-layer --config .github/ct.yaml
